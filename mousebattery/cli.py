@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import config
+from .battery import read_battery
 from .capture import listen
 from .discovery import list_interfaces
 from .descriptor import parse_descriptor
@@ -55,7 +56,7 @@ def cmd_descriptor(args: argparse.Namespace) -> int:
 
 def cmd_listen(args:argparse.Namespace) -> int:
     interfaces = [
-        i for i in list_interfaces(args.vid, tuple(args.pid)) if i.usage_page == 0xFF05
+        i for i in list_interfaces(args.vid, tuple(args.pid)) if i.usage_page == config.STATUS_USAGE_PAGE
     ]
 
     if not interfaces:
@@ -64,6 +65,23 @@ def cmd_listen(args:argparse.Namespace) -> int:
 
     log_path = Path("captures") / f"capture-{datetime.now():%Y%m%d-%H%M%S}.log"
     listen(interfaces, length=33, seconds=args.seconds, log_path=log_path)
+    return 0
+
+def cmd_battery(args: argparse.Namespace) -> int:
+    interfaces = [
+        i for i in list_interfaces(args.vid, tuple(args.pid)) if i.usage_page == config.STATUS_USAGE_PAGE
+    ]
+
+    if not interfaces:
+        print("No 0xff05 interfaces found. Is the dongle plugged in?")
+        return 1
+
+    status = read_battery(interfaces, timeout=args.timeout)
+    if status is None:
+        print("Failed to read battery status.")
+        return 1
+
+    print(f"Battery: {status.percent}% {'(charging)' if status.charging else '(not charging)'}")
     return 0
 
 def build_parser() -> argparse.ArgumentParser:
@@ -93,6 +111,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_listen.add_argument("--seconds", type=float, help="Stop after N seconds")
     p_listen.set_defaults(func=cmd_listen)
 
+    p_battery = sub.add_parser("battery", help="Read battery status")
+    p_battery.add_argument("--vid", type=_hex, default=config.VENDOR_ID, help="Vendor ID (hex)")
+    p_battery.add_argument(
+        "--pid", type=_hex, nargs="+", default=list(config.TARGET_PRODUCT_IDS),
+        help="Product ID(s) (hex)",
+    )
+    p_battery.add_argument("--timeout", type=float, default=10.0, help="Timeout in seconds")
+    p_battery.set_defaults(func=cmd_battery)
+
+    
     return parser
 
 
