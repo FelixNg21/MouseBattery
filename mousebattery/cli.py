@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import config
-from .battery import read_battery
+from .reader import read_status
 from .capture import listen
 from .discovery import list_interfaces
 from .descriptor import parse_descriptor
@@ -76,12 +76,16 @@ def cmd_battery(args: argparse.Namespace) -> int:
         print("No 0xff05 interfaces found. Is the dongle plugged in?")
         return 1
 
-    status = read_battery(interfaces, timeout=args.timeout)
+    status = read_status(interfaces, timeout=args.timeout)
     if status is None:
-        print("Failed to read battery status.")
+        print("No status report received. Try again with the mouse idle.")
         return 1
 
-    print(f"Battery: {status.percent}% {'(charging)' if status.charging else '(not charging)'}")
+    state = "charging" if status.charging else "not charging"
+    print(f"Battery: {status.battery_percent}% ({state})")
+    print(f"DPI: {status.dpi}")
+    if status.polling_hz is not None:
+        print(f"Polling rate: {status.polling_hz} Hz")
     return 0
 
 def build_parser() -> argparse.ArgumentParser:

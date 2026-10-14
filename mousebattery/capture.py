@@ -28,12 +28,14 @@ def listen(
             log_file.flush()
 
     def reader(iface: HidInterface, label: str) -> None:
+        last = None
         try:
             with HidChannel(iface) as channel:
                 emit(label, "listening")
                 while not stop.is_set():
                     data = channel.read(length, timeout_ms=500)
-                    if data:
+                    if data and data != last:
+                        last = data
                         emit(label, data.hex(" "))
         except Exception as exc:
             emit(label, f"error: {exc}")
