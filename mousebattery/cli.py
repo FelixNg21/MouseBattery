@@ -88,6 +88,12 @@ def cmd_battery(args: argparse.Namespace) -> int:
         print(f"Polling rate: {status.polling_hz} Hz")
     return 0
 
+def cmd_tray(args: argparse.Namespace) -> int:
+    from .tray import run_tray
+
+    run_tray()
+    return 0
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mousebattery")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -124,6 +130,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_battery.add_argument("--timeout", type=float, default=10.0, help="Timeout in seconds")
     p_battery.set_defaults(func=cmd_battery)
 
+    p_tray = sub.add_parser("tray", help="Run the system tray battery indicator")
+    p_tray.set_defaults(func=cmd_tray)
     
     return parser
 
