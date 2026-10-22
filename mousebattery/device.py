@@ -29,4 +29,10 @@ class HidChannel:
 
     def read(self, length: int = 64, timeout_ms: int = 500) -> bytes:
         """Blocking read. Returns b'' if nothing arrives before the timeout."""
-        return bytes(self._dev.read(length, timeout_ms))
+        try:
+            return bytes(self._dev.read(length, timeout_ms))
+        except OSError as exc:
+            iface = self.interface
+            where = f"if{iface.interface_number}/{iface.usage_page:#06x}"
+            detail = self._dev.error()
+            raise OSError(f"{exc} on {where}" + (f": {detail}" if detail else "")) from exc

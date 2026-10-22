@@ -1,4 +1,6 @@
 import time
+import logging
+
 from contextlib import contextmanager
 
 from mousebattery.monitor import Monitor
@@ -90,3 +92,55 @@ def test_keeps_last_status_after_disconnect():
         assert state.error is not None
     finally:
         monitor.stop()
+
+def test_logs_a_repeated_failure_only_once(caplog):
+    caplog.set_level(logging.INFO, logger="mousebattery")
+    monitor = run_monitor(
+        scripted_connect(
+            DeviceNotFound("dongle not found"),
+            DeviceNotFound("dongle not found"),
+            DeviceNotFound("dongle not found"),
+            [FakeSource([make_packet()])],
+        )
+    )
+    try:
+        assert wait_for(lambda: monitor.latest().status is not None)
+    finally:
+        monitor.stop()
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "dongle not found" in warnings[0].getMessage()
+    assert not warnings[0].exc_info  # expected condition: no traceback
+
+
+def test_unexpected_error_is_logged_with_traceback(caplog):
+    caplog.set_level(logging.INFO, logger="mousebattery")
+    monitor = run_monitor(scripted_connect([ExplodingSource([make_packet()])]))
+    try:
+        assert wait_for(lambda: not monitor.latest().connected and monitor.latest().status)
+    finally:
+        monitor.stop()
+    first = [r for r in caplog.records if r.levelno == logging.WARNING][0]
+    assert "device removed" in first.getMessage()
+    assert first.exc_info is not None
+
+
+def test_logs_battery_changes_but_not_repeats(caplog):
+    caplog.set_level(logging.INFO, logger="mousebattery")
+    packets = [
+        make_packet(byte1=0x56),  # 86%
+        make_packet(byte1=0x56),  # repeat
+        make_packet(byte1=0x55),  # 85%
+        make_packet(byte1=0xD5),  # 85%, charging
+    ]
+    monitor = run_monitor(scripted_connect([FakeSource(packets)]))
+    try:
+        assert wait_for(lambda: monitor.latest().status and monitor.latest().status.charging)
+    finally:
+        monitor.stop()
+    messages = [r.getMessage() for r in caplog.records if r.getMessage().startswith("battery")]
+    assert messages == [
+        "battery 86%, charging=False",
+        "battery 85%, charging=False",
+        "battery 85%, charging=True",
+    ]

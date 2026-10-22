@@ -89,8 +89,10 @@ def cmd_battery(args: argparse.Namespace) -> int:
     return 0
 
 def cmd_tray(args: argparse.Namespace) -> int:
+    from .logging_setup import setup_logging
     from .tray import run_tray
-
+    
+    print(f"Logging to {setup_logging()}")
     run_tray()
     return 0
 

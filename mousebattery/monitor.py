@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, replace
 from typing import Callable
 
-from .reader import PacketSource, read_status_from
+from .reader import PacketSource, read_status_from, DeviceNotFound
 from .status import StatusReport
+
+logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class MonitorState:
@@ -50,15 +53,36 @@ class Monitor:
         with self._lock:
             self._state = replace(self._state, **changes)
 
+    def _record(self, status: StatusReport) -> None:
+        previous = self.latest().status
+        changed = previous is None or (
+            previous.battery_percent,
+            previous.charging,
+        ) != (status.battery_percent, status.charging)
+        if changed:
+            logger.info("battery %d%%, charging=%s", status.battery_percent, status.charging)
+        self._update(status=status, updated_at=self._clock())
+
     def _run(self) -> None:
+        last_error: str | None = None
         while not self._stop.is_set():
             try:
                 with self._connect() as sources:
-                    self._update(connected=True, error = None)
+                    logger.info("connected to dongle")
+                    last_error = None
+                    self._update(connected=True, error=None)
                     while not self._stop.is_set():
                         status = read_status_from(sources, timeout=0.5)
                         if status is not None:
-                            self._update(status=status, updated_at=self._clock())
-            except Exception as exc: # unplugged dongle, read failure, etc
-                self._update(connected=False, error=str(exc))
+                            self._record(status)
+            except Exception as exc:  # unplugged dongle, read failure, ...
+                message = str(exc)
+                if message != last_error:  # don't repeat the same error every retry
+                    logger.warning(
+                        "connection problem: %s",
+                        message,
+                        exc_info=not isinstance(exc, (DeviceNotFound, OSError)),
+                    )
+                    last_error = message
+                self._update(connected=False, error=message)
                 self._stop.wait(self._retry_delay)
