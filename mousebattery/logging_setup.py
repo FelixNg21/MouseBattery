@@ -8,7 +8,8 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 APP_NAME = "mousebattery"
-_FORMAT = "%(asctime)s %(levelname)-7s %(name)s: %(message)s"
+_FORMAT = "%(asctime)s.%(msecs)03d %(levelname)-7s %(name)s: %(message)s"
+_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 _HANDLER_TAG = "_mousebattery_handler"
 
 def log_path() -> Path:
@@ -33,7 +34,7 @@ def setup_logging(path: Path | None = None) -> Path:
     if sys.stderr is not None and sys.stderr.isatty():
         handlers.append(logging.StreamHandler())
 
-    formatter = logging.Formatter(_FORMAT)
+    formatter = logging.Formatter(_FORMAT, _DATE_FORMAT)
     for handler in handlers:
         handler.setFormatter(formatter)
         setattr(handler, _HANDLER_TAG, True)

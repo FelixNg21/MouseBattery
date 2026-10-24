@@ -25,14 +25,15 @@ from __future__ import annotations
 import ctypes
 from ctypes import wintypes
 
+
+# Constant for Windows API
+ERROR_ALREADY_EXISTS = 183
+
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 kernel32.CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
 kernel32.CreateMutexW.restype = wintypes.HANDLE
 kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
 kernel32.CloseHandle.restype = wintypes.BOOL
-
-# Constant for Windows API
-ERROR_ALREADY_EXISTS = 183
 
 class SingleInstance:
     def __init__(self, name: str):
@@ -42,20 +43,15 @@ class SingleInstance:
 
     def acquire(self) -> bool:
         """Return True if this process now owns the lock, False if another copy holds it."""
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        kernel32.CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
-        kernel32.CreateMutexW.restype = wintypes.HANDLE
-        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
-        kernel32.CloseHandle.restype = wintypes.BOOL
-        
-        self._mutex_handle = kernel32.CreateMutexA(None, False, self.name)
+        self._mutex_handle = kernel32.CreateMutexW(None, False, self.name)
 
         error = ctypes.get_last_error()
-
         if self._mutex_handle == 0:
             raise ctypes.WinError(error)
         elif error == ERROR_ALREADY_EXISTS:
             kernel32.CloseHandle(self._mutex_handle)
+            self._mutex_handle = None
+            return False
         else:
             return True
 

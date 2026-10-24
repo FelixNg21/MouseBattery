@@ -10,12 +10,12 @@ piece, watch the tests fail, then make them pass.
 Suggested order (each step works on its own):
 
 ## 1. Entry point: `run_tray.py`
-- [ ] Write `main()`: logging first, then the tray.
-- [ ] Run it: `python run_tray.py` should behave like `python -m mousebattery tray`.
+- [X] Write `main()`: logging first, then the tray.
+- [X] Run it: `python run_tray.py` should behave like `python -m mousebattery tray`.
 
 ## 2. Single instance: `mousebattery/single_instance.py`  (tests: `test_single_instance.py`)
-- [ ] Pick an approach (see the docstring) and implement `acquire()` / `release()`.
-- [ ] Use it in `run_tray.py`. Start two copies by hand to check the second one exits.
+- [X] Pick an approach (see the docstring) and implement `acquire()` / `release()`.
+- [X] Use it in `run_tray.py`. Start two copies by hand to check the second one exits.
 - Think about: what happens to the lock if the app crashes or is killed?
 
 ## 3. Build: `build_exe.py`  (tests: `test_build.py`)

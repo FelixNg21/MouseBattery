@@ -7,16 +7,22 @@ mousebattery package.
 
 from mousebattery.logging_setup import setup_logging
 from mousebattery.tray import run_tray
+from mousebattery.single_instance import SingleInstance
+import logging
 
+MUTEX_NAME = "mousebattery"
+logger = logging.getLogger("mousebattery.run_tray")
 
 def main() -> int:
-    # TODO 1: set up logging first, so even startup failures get recorded.
     path = setup_logging()
-    # TODO 2: (after you've written single_instance.py) exit quietly if another
-    #         copy of the app is already running.
-    # TODO 3: run the tray.
-    run_tray()
-    # raise NotImplementedError("TODO: write main()")
+    single_instance = SingleInstance(MUTEX_NAME)
+    if not single_instance.acquire():
+        logger.info("Another instance holds the lock. Only one instance may run at a time.")
+        return 0
+    try:
+        run_tray()
+    finally:
+        single_instance.release()
 
 
 if __name__ == "__main__":
