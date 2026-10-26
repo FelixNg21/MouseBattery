@@ -1,8 +1,5 @@
 import pytest
 
-# Remove this line when you start on build_exe.build_args().
-pytestmark = pytest.mark.skip(reason="remove this line when you start on build_exe.py")
-
 from build_exe import APP_NAME, ENTRY_POINT, build_args  # noqa: E402
 
 WINDOWLESS_FLAGS = ("--noconsole", "--windowed", "-w")

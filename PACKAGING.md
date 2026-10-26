@@ -19,11 +19,11 @@ Suggested order (each step works on its own):
 - Think about: what happens to the lock if the app crashes or is killed?
 
 ## 3. Build: `build_exe.py`  (tests: `test_build.py`)
-- [ ] `pip install -r requirements-dev.txt`
-- [ ] Write `build_args()`.
-- [ ] Do a `--debug` build first. A console window shows errors the windowless build
+- [X] `pip install -r requirements-dev.txt`
+- [X] Write `build_args()`.
+- [X] Do a `--debug` build first. A console window shows errors the windowless build
       would hide. Run `dist\MouseBattery\MouseBattery.exe` from a terminal.
-- [ ] Then try the release build, then `--onefile`.
+- [X] Then try the release build, then `--onefile`.
 - Questions to research: how do `--onefile` and `--onedir` differ at startup? Which one
   is easier to debug? Why might antivirus or SmartScreen complain about an unsigned exe?
 - `build/`, `dist/` and `*.spec` are build output. Don't commit them.

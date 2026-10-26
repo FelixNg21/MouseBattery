@@ -26,7 +26,19 @@ def build_args(debug: bool, onefile: bool) -> list[str]:
                         dynamically (pystray chooses its backend at runtime!)
     The entry point must be the last argument.
     """
-    raise NotImplementedError("TODO: write build_args()")
+
+    result_list = ["--name", APP_NAME, "--noconfirm", "--clean"]
+    
+    if not debug:
+        result_list.append("--noconsole")
+    if onefile:
+        result_list.append("--onefile")
+    else:
+        result_list.append("--onedir")
+
+    result_list.append(ENTRY_POINT)
+
+    return result_list
 
 
 def main(argv: list[str] | None = None) -> int:

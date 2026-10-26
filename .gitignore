@@ -3,3 +3,7 @@
 
 
 tests/.pytest_cache/
+
+build/
+dist/
+MouseBattery.spec
