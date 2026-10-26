@@ -29,23 +29,23 @@ Suggested order (each step works on its own):
 - `build/`, `dist/` and `*.spec` are build output. Don't commit them.
 
 ## 4. Login start: `mousebattery/startup.py`  (tests: `test_startup.py`)
-- [ ] `startup_command()`, then `enable()`, `disable()`, `is_enabled()`.
+- [X] `startup_command()`, then `enable()`, `disable()`, `is_enabled()`.
 - The registry tests only run on Windows and use a throwaway key
   (`HKCU\Software\mousebattery-tests`), never the real Run key.
-- [ ] Add two subcommands to `cli.py` yourself: `install-startup` and `uninstall-startup`.
+- [X] Add two subcommands to `cli.py` yourself: `install-startup` and `uninstall-startup`.
 - Design question: when the app runs from source, `sys.executable` is `python.exe`.
   When it's a PyInstaller build, `getattr(sys, "frozen", False)` is true and
   `sys.executable` is your .exe. What should `install-startup` do when not frozen?
 
 ## 5. Final checks (do all of these on the real build)
-- [ ] Debug build: icon appears, log shows "connected to dongle".
-- [ ] Windowless build: no console window, icon still appears.
-- [ ] Unplug and replug the dongle: it recovers.
-- [ ] Launch a second copy: no second icon.
-- [ ] After `install-startup`: `reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
+- [X] Debug build: icon appears, log shows "connected to dongle".
+- [X] Windowless build: no console window, icon still appears.
+- [X] Unplug and replug the dongle: it recovers.
+- [X] Launch a second copy: no second icon.
+- [X] After `install-startup`: `reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
       shows the entry. Sign out and in again: the icon comes back.
-- [ ] After `uninstall-startup`: the entry is gone.
-- [ ] Menu > Quit leaves no stray process in Task Manager.
+- [X] After `uninstall-startup`: the entry is gone.
+- [X] Menu > Quit leaves no stray process in Task Manager.
 
 ## Things I could not verify for you (check them on your machine)
 - Whether the built exe can see the dongle. The `hid` module is a compiled extension.

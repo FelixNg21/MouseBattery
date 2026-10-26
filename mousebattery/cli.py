@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import argparse
 from datetime import datetime
 from pathlib import Path
@@ -96,6 +97,30 @@ def cmd_tray(args: argparse.Namespace) -> int:
     run_tray()
     return 0
 
+def cmd_install_startup(args: argparse.Namespace) -> int:
+    from .startup import StartupError, enable, resolve_exe_path, startup_command
+
+    try:
+        exe = resolve_exe_path(args.exe, getattr(sys, "frozen", False), sys.executable)
+    except StartupError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    command = startup_command(exe)
+    enable(command)
+    print(f"Registered to start at login: {command}")
+    return 0
+
+def cmd_uninstall_startup(args: argparse.Namespace) -> int:
+    from .startup import disable, is_enabled
+
+    if not is_enabled():
+        print("Nothing to remove; app is not registered to start at login")
+        return 0
+    disable()
+    print("Removed the login entry.")
+    return 0
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mousebattery")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -134,6 +159,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_tray = sub.add_parser("tray", help="Run the system tray battery indicator")
     p_tray.set_defaults(func=cmd_tray)
+
+    p_install = sub.add_parser("install-startup", help="Enable MouseBattery on Windows Startup")
+    p_install.add_argument("--exe", help="path to MouseBattery.exe")
+    p_install.set_defaults(func=cmd_install_startup)
+
+    p_uninstall = sub.add_parser("uninstall-startup", help="Disable MouseBattery on Windows Startup")
+    p_uninstall.set_defaults(func=cmd_uninstall_startup)
     
     return parser
 

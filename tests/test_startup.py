@@ -2,9 +2,6 @@ import sys
 
 import pytest
 
-# Remove this line when you start on startup.py.
-pytestmark = pytest.mark.skip(reason="remove this line when you start on startup.py")
-
 from mousebattery.startup import (  # noqa: E402
     VALUE_NAME,
     disable,
@@ -66,3 +63,17 @@ def test_disable_removes_the_entry(throwaway_key):
 @windows_only
 def test_disable_when_never_enabled_is_harmless(throwaway_key):
     disable(key_path=throwaway_key)  # must not raise
+
+@windows_only
+def test_disable_leaves_other_entries_alone(throwaway_key):
+    import winreg
+
+    enable(r'"C:\app.exe"', key_path=throwaway_key)
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, throwaway_key) as key:
+        winreg.SetValueEx(key, "SomeOtherApp", 0, winreg.REG_SZ, r'"C:\other.exe"')
+
+    disable(key_path=throwaway_key)
+
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, throwaway_key) as key:
+        value, _kind = winreg.QueryValueEx(key, "SomeOtherApp")
+    assert value == r'"C:\other.exe"'
