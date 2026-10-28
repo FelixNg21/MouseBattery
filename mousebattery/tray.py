@@ -4,6 +4,7 @@ import logging
 import threading
 import time
 import os
+import sys
 
 import pystray
 
@@ -12,6 +13,7 @@ from .monitor import Monitor
 from .reader import open_status_channels
 from .render import render_icon
 from .logging_setup import log_path
+from .startup import is_enabled, disable, enable, resolve_exe_path, startup_command
 
 REFRESH_SECONDS = 5
 logger = logging.getLogger(__name__)
@@ -51,6 +53,19 @@ def run_tray() -> None:
         monitor.stop()
         icon.stop()
 
+    def toggle_startup(icon: pystray.Icon, item) -> None:
+        try:
+            if is_enabled():
+                disable()
+                logger.info("start at login: disabled")
+            else:
+                exe = resolve_exe_path(None, getattr(sys, "frozen", False), sys.executable)
+                enable(startup_command(str(exe)))
+                logger.info("start at login: enabled (%s)", exe)
+        except Exception:
+            logger.exception("could not change the start-at-login setting")
+        icon.update_menu()
+
     icon = pystray.Icon(
         "Mousebattery",
         render_icon(None, False),
@@ -62,6 +77,7 @@ def run_tray() -> None:
                 enabled=False
             ),
             pystray.MenuItem("Open log file", open_log),
+            pystray.MenuItem("Start at login", toggle_startup, checked=lambda item: is_enabled(), enabled=getattr(sys, "frozen", False)),
             pystray.MenuItem("Quit", quit_app)
         ),
     )
