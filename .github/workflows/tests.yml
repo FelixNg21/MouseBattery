@@ -1,8 +1,6 @@
 # Runs the test suite on a Windows machine for every push and pull request.
 # Windows matters here: the registry tests in tests/test_startup.py only run there.
 #
-# NOTE: I could not run this workflow myself. Check the "Actions" tab after your
-# first push, and look up the current major versions of the two `uses:` actions.
 name: tests
 
 on: [push, pull_request]
