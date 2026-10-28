@@ -1,0 +1,59 @@
+# Builds the Windows exe on GitHub's own machine and publishes a DRAFT release when
+# you push a version tag, e.g.:   git tag v0.1.0   then   git push origin v0.1.0
+#
+# NOTE: I could not run this workflow myself. Expect to fix a small thing or two on the
+# first real run, and read the log of each step in the Actions tab if it fails.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+# The default token can only read. Creating a release and uploading files needs write.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest
+
+      # Stop early if the tag and the version in the code disagree, so the zip name
+      # always matches the release it's attached to.
+      - name: Check the tag matches __version__
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          $version = python -c "from mousebattery import __version__; print(__version__)"
+          if ("v$version" -ne $env:TAG) {
+            Write-Error "Tag $env:TAG does not match __version__ $version"
+            exit 1
+          }
+
+      - name: Build the exe
+        run: python build_exe.py --onefile
+
+      - name: Package the zip and checksum
+        run: python -m scripts.package_release
+
+      # --draft: nothing becomes public until you review it on GitHub and click Publish.
+      - name: Create the draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          $files = Get-ChildItem release -File | ForEach-Object { $_.FullName }
+          gh release create $env:TAG $files --draft --generate-notes --title $env:TAG
